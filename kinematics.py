@@ -38,7 +38,8 @@ def inverseKinematics(x, y, z):
         projForearm = math.sqrt(forearm ** 2 - endPos[0] ** 2)
         xNum = projForearm ** 2 - bicep ** 2 - dis ** 2
         xDen = -2 * bicep * dis
-        inner = math.degrees(math.acos(xNum / xDen))
+        temp = xNum / xDen
+        inner = math.degrees(math.acos(temp))
         diffY = fMotor[1] - endPos[1]
         phi = math.degrees(math.acos(diffY / dis))
         theta = 180 - inner - phi
@@ -53,7 +54,8 @@ def inverseKinematics(x, y, z):
     f = inverseKinematicsHelper(np.array([x, y, z]))
     r = inverseKinematicsHelper(np.array([(x * cos120) - (y * sin120), (x * sin120 + y * cos120), z]))
     l = inverseKinematicsHelper(np.array([(x * cos240) - (y * sin240), (x * sin240 + y * cos240), z]))
-
+    if f is None or r is None or l is None:
+        return None
     return np.array([f, r, l])
 
 
@@ -115,3 +117,24 @@ def getPointsOnCircle(r, theta):
     x = r * math.cos(math.radians(theta))
     y = r * math.sin(math.radians(theta))
     return np.array([x, y])
+
+def speedTest():
+    count = 0
+    for i in range (0, 90):
+        for j in range(0, 90):
+            for k in range(0, 90):
+                print(i,j,k)
+                predPos = forwardKinematics(i, j, k)
+                if(predPos == None):
+                    continue
+                predAngles = np.array(inverseKinematics(predPos[0], predPos[1], predPos[2]))
+                if (predAngles == None).all():
+                    continue
+                count +=1
+                if(i != round(predAngles[0])):
+                    print("failed for i", i, j, k, predAngles)
+                if (j != round(predAngles[1])):
+                    print("failed for i", i, j, k, predAngles)
+                if (k != round(predAngles[2])):
+                    print("failed for i", i, j, k, predAngles)
+    print("all passed", count)
