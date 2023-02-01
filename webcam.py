@@ -6,7 +6,7 @@ def whiteCubeExtract(frame):
     height = dimensions[0]
     width = dimensions[1]
     imgGry = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thrash = cv2.threshold(imgGry, 100, 255, cv2.THRESH_BINARY)
+    _, thrash = cv2.threshold(imgGry, 200, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(thrash, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     temp = []
     for cou in contours:

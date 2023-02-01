@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 servo = (0,0,0)
-delay = .01
+delay = .005
 
 def servoController():
     while True:
@@ -16,12 +16,13 @@ def servoController():
         currR = getAngle(Servo.RIGHT)
         currL = getAngle(Servo.LEFT)
 
-        if(abs(currF-front)<1 and abs(currR-right)<1 and abs(currL-left)<1):
+        if(abs(currF-front)<2 and abs(currR-right)<2 and abs(currL-left)<2):
+            time.sleep(delay)
             continue
 
-        adjF = (front * .2) + (currF * .8)
-        adjR = (right * .2) + (currR * .8)
-        adjL = (left * .2) + (currL * .8)
+        adjF = (front * .005) + (currF * .995)
+        adjR = (right * .005) + (currR * .995)
+        adjL = (left * .005) + (currL * .995)
 
         control(Servo.FRONT, adjF)
         control(Servo.RIGHT, adjR)
@@ -54,9 +55,9 @@ def servoSmooterController(servoT):
             control(Servo.LEFT, left)
             break
 
-        currF = (front * .05) + (currF * .95)
-        currR = (right * .05) + (currR * .95)
-        currL = (left * .05) + (currL * .95)
+        currF = (front * .02) + (currF * .98)
+        currR = (right * .02) + (currR * .98)
+        currL = (left * .02) + (currL * .98)
 
         control(Servo.FRONT, currF)
         control(Servo.RIGHT, currR)
@@ -86,15 +87,24 @@ def hover():
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     count = 0
+    notVis = 0
     while(True):
-        print("running")
         ret, frame = vid.read()
         frame = cv2.resize(frame, (320, 240))
         count +=1
         contours = whiteCubeExtract(frame)
+        if(len(contours) == 0):
+            notVis+=1
+            if(notVis >=60):
+                notVis = 0
+                grab(False)
+                servoSmooterController((0,0,0))
+        else:
+            notVis = 0
         deltaPose = estimatedCubePose(contours)
         currPose = getCurrentPose()
-        if(deltaPose is not None and np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)>=3 and count >=30):
+        if(deltaPose is not None and np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)>=5 and count >=15):
+            grab(False)
             if(np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)>=150):
                 d = np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)
                 deltaPose =  np.array([deltaPose[0]/d * 140, deltaPose[1]/d * 140, deltaPose[2]])
@@ -102,8 +112,7 @@ def hover():
                 print("current pose is not valid")
             x,y,z = np.add(deltaPose, currPose)
             z = currPose[2]
-            print("pose",x,y,z)
-            angles = inverseKinematics(x, y, z)
+            angles = inverseKinematics(x, y, -300)
             if(angles is not None):
                 global servo
                 servo = tuple(angles)
@@ -111,9 +120,20 @@ def hover():
                 count = 0
             else:
                 print("not valid spot for arm")
+        elif(deltaPose is not None and np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)<5 and count >=15):
+            grabPos = getCurrentPose()
+            angles = inverseKinematics(grabPos[0], grabPos[1], -395)
+            if(angles is not None):
+                servo = tuple(angles)
+                servoSmooterController(servo)
+                time.sleep(1)
+                grab(True)
+                time.sleep(1)
+                servoSmooterController((0,0,0))
+                time.sleep(3)
+                grab(False)
+                count = 0
         #SanityCheck
-        print("cube pose", deltaPose)
-        print("current arm pose", currPose)
         cv2.drawContours(frame, contours, -1, (0,255,0), 3)
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -125,8 +145,5 @@ def hover():
 
 init()
 time.sleep(1)
-"""thread = Thread(target = servoSimpleController)
-thread.start()"""
 
 hover()
-        

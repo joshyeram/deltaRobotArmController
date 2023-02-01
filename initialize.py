@@ -4,7 +4,7 @@ from enum import IntEnum
 import random
 from kinematics import *
 
-frontRange = (30, 155)
+frontRange = (35, 160)
 rightRange = (172, 50)
 leftRange = (35, 160)
 kit = ServoKit(channels=16)
@@ -13,8 +13,8 @@ class Servo(IntEnum):
     FRONT = 3 # min 32, max 153: range = 121 for roughly 90
     RIGHT = 1 # min 175, max 53: range 122 for for roughly 90
     LEFT = 2 # min 33, max 158: range = 125 for roughly 90
-    TOP = 5 # min 33, max 158: range = 125 for roughly 90
-    BOTTOM = 6 # min 33, max 158: range = 125 for roughly 90
+    TOP = 8 # min 33, max 158: range = 125 for roughly 90
+    BOTTOM = 9 # min 33, max 158: range = 125 for roughly 90
 
 
 def indvControl(which):
@@ -74,7 +74,7 @@ def init():
     front = getAngle(Servo.FRONT)
     right = getAngle(Servo.RIGHT)
     left = getAngle(Servo.LEFT)
-
+    grab(False)
     while True:
         front = getAngle(Servo.FRONT)
         right = getAngle(Servo.RIGHT)
@@ -109,6 +109,12 @@ def moveTo(pos):
     control(Servo.RIGHT, r)
     control(Servo.LEFT, l)
 
-
-
-
+def grab(open): 
+    #true to grab
+    #false to open
+    if(open):
+        kit.servo[Servo.TOP].angle = 128
+        kit.servo[Servo.BOTTOM].angle = 130
+    else:
+        kit.servo[Servo.TOP].angle = 5
+        kit.servo[Servo.BOTTOM].angle = 5
