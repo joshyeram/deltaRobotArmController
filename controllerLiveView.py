@@ -1,11 +1,18 @@
 from initialize import *
 from webcam import *
-from threading import Thread
+import threading
 import cv2
 import numpy as np
 
 servo = (0,0,0)
 delay = .005
+running = True
+vid = cv2.VideoCapture(0)
+vid.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+ret, temp = vid.read()
+frame = cv2.resize(temp, (320, 240))
 
 def servoController():
     while True:
@@ -81,16 +88,23 @@ def getCurrentPose():
     calc = forwardKinematics(currF, currR, currL)
     return calc
 
+def view(vid):
+    while(True):
+        global frame
+        ret, temp = vid.read()
+        frame = cv2.resize(temp, (320, 240))
+        contours = whiteCubeExtract(frame)
+        cv2.drawContours(frame, contours, -1, (0,255,0), 3)
+        frame = cv2.resize(frame, (1280, 960))
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            running = False
+            break
+
 def hover():
-    vid = cv2.VideoCapture(0)
-    vid.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    vid.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     count = 0
     notVis = 0
-    while(True):
-        ret, frame = vid.read()
-        frame = cv2.resize(frame, (320, 240))
+    while(running):
         count +=1
         contours = whiteCubeExtract(frame)
         if(len(contours) == 0):
@@ -134,18 +148,18 @@ def hover():
                 grab(False)
                 count = 0
         #SanityCheck
-        cv2.drawContours(frame, contours, -1, (0,255,0), 3)
+        """cv2.drawContours(frame, contours, -1, (0,255,0), 3)
         frame = cv2.resize(frame, (1280, 960))
-        cv2.circle(frame, (640, 480), 400, (0, 0, 255), 1)
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        cv2.imshow('frame', frame)"""
         
-
-    vid.release()
-    cv2.destroyAllWindows()
-
+        
 init()
 time.sleep(1)
 
+viewT = threading.Thread(target=view, args = (vid,))
+viewT.start()
 hover()
+
+viewT.join()
+vid.release()
+cv2.destroyAllWindows()
