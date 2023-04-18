@@ -122,7 +122,7 @@ def hover():
                 print("not valid spot for arm")
         elif(deltaPose is not None and np.sqrt(deltaPose[0]**2 + deltaPose[1]**2)<5 and count >=15):
             grabPos = getCurrentPose()
-            angles = inverseKinematics(grabPos[0], grabPos[1], -395)
+            angles = inverseKinematics(grabPos[0], grabPos[1], -420)
             if(angles is not None):
                 servo = tuple(angles)
                 servoSmooterController(servo)
@@ -135,6 +135,7 @@ def hover():
                 count = 0
         #SanityCheck
         cv2.drawContours(frame, contours, -1, (0,255,0), 3)
+        frame = cv2.resize(frame, (1280, 960))
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
